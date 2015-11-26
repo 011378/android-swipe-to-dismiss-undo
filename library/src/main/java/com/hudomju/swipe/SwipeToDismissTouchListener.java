@@ -111,8 +111,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
         public RowContainer(ViewGroup container) {
             this.container = container;
-            dataContainer = container.getChildAt(0);
-            undoContainer = container.getChildAt(1);
+            dataContainer = container.findViewWithTag("dataContainer");
+            undoContainer = container.findViewWithTag("undoContainer");
             dataContainerHasBeenDismissed = false;
         }
 
