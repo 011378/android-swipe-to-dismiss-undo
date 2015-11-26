@@ -29,10 +29,12 @@ Add the following to your `build.gradle`:
 Create a Layout
 ===============
 
-To make an item in the list dismissable, you need ot place a ViewGroup (i.e. FrameLayout) as the 
-root view of your layout. Inside the ViewGroup, add one view that contains the main content for 
+To make an item in the list dismissable, you need to place a ViewGroup (i.e. FrameLayout) as the 
+root view of your item layout. Inside the ViewGroup, add one view that contains the main content for 
 the row (your primary layout when the row hasn't been dismissed yet) and another view that contains 
 the contents of the dismiss layout (i.e. with an undo button).
+
+Finally, just set the `tag` XML attribute on the two ViewGroups that you are using to display - `dataContainer` for your "front" view, and `undoContainer` for the "back" view
 
 For example, the following layout uses a FrameLayout with two child views: a TextView to contain 
 the main content (populated by an Adapter at runtime), and a LinearLayout for the undo layout.
@@ -53,7 +55,8 @@ the main content (populated by an Adapter at runtime), and a LinearLayout for th
             android:paddingLeft="@dimen/list_item_padding_sides"
             android:paddingRight="@dimen/list_item_padding_sides"
             android:id="@+id/txt_data"
-            android:background="@android:color/white"/>
+            android:background="@android:color/white
+            android:tag="dataContainer"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -63,7 +66,8 @@ the main content (populated by an Adapter at runtime), and a LinearLayout for th
             android:weightSum="3"
             android:height="@dimen/list_item_height"
             android:paddingLeft="@dimen/list_item_padding_sides"
-            android:paddingRight="@dimen/list_item_padding_sides">
+            android:paddingRight="@dimen/list_item_padding_sides"
+            android:tag="undoContainer">
 
             <TextView
                 android:layout_width="0dp"
