@@ -11,7 +11,7 @@ import android.view.ViewGroup;
 public class SwipeableItemClickListener implements RecyclerView.OnItemTouchListener {
     private final OnItemClickListener mListener;
 
-    private final GestureDetector mGestureDetector;
+    private GestureDetector mGestureDetector;
 
     public SwipeableItemClickListener(Context context, OnItemClickListener listener) {
         mListener = listener;
@@ -26,7 +26,7 @@ public class SwipeableItemClickListener implements RecyclerView.OnItemTouchListe
     @Override
     public boolean onInterceptTouchEvent(RecyclerView view, MotionEvent e) {
         View childView = view.findChildViewUnder(e.getX(), e.getY());
-        int position = view.getChildPosition(childView);
+        int position = view.getChildAdapterPosition(childView);
         if (childView != null && mListener != null && mGestureDetector.onTouchEvent(e)) {
             mListener.onItemClick(findChildViewLeaf(childView, e), position);
         }
@@ -74,5 +74,8 @@ public class SwipeableItemClickListener implements RecyclerView.OnItemTouchListe
         return null;
     }
 
+    public void setGestureDetector(GestureDetector detector) {
+        mGestureDetector = detector;
+    }
 }
 

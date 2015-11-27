@@ -100,7 +100,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
             processPendingDismisses();
         }
     };
-    private long mDismissDelayMillis = -1; // negative to disable automatic dismissing
+    private long mDismissDelayMillis = -1L; // negative to disable automatic dismissing
 
     public class RowContainer {
 
@@ -369,6 +369,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
                 if (mSwiping) {
                     mRowContainer.getCurrentSwipingView().setTranslationX(deltaX - mSwipingSlop);
+                    // Comment line below to disable alpha fade on initial swipe
                     mRowContainer.getCurrentSwipingView().setAlpha(Math.max(0f, Math.min(1f,
                             1f - 2f * Math.abs(deltaX) / mViewWidth)));
                     return true;
@@ -418,9 +419,10 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         // Notify the callbacks
         mCallbacks.onPendingDismiss(mRecyclerView, dismissPosition);
         // Automatically dismiss the item after a certain delay
-        if(mDismissDelayMillis >= 0)
+        if(mDismissDelayMillis >= 0L) {
             mHandler.removeCallbacks(mDismissRunnable);
             mHandler.postDelayed(mDismissRunnable, mDismissDelayMillis);
+        }
     }
 
     /**
