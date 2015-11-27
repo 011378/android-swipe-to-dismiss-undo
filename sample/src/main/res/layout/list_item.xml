@@ -14,7 +14,8 @@
         android:paddingLeft="@dimen/list_item_padding_sides"
         android:paddingRight="@dimen/list_item_padding_sides"
         android:id="@+id/txt_data"
-        android:background="@android:color/white"/>
+        android:background="@android:color/white"
+		android:tag="dataContainer"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,7 +25,8 @@
         android:weightSum="3"
         android:height="@dimen/list_item_height"
         android:paddingLeft="@dimen/list_item_padding_sides"
-        android:paddingRight="@dimen/list_item_padding_sides">
+        android:paddingRight="@dimen/list_item_padding_sides"
+		android:tag="undoContainer">
 
         <TextView
             android:layout_width="0dp"
