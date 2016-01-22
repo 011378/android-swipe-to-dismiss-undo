@@ -1,5 +1,10 @@
 package com.hudomju.swipe.sample;
 
+import static android.widget.Toast.LENGTH_SHORT;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -15,99 +20,96 @@ import com.hudomju.swipe.SwipeToDismissTouchListener;
 import com.hudomju.swipe.SwipeableItemClickListener;
 import com.hudomju.swipe.adapter.RecyclerViewAdapter;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static android.widget.Toast.LENGTH_SHORT;
-
 public class RecyclerViewActivity extends Activity {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.recycler_view_activity);
-        init((RecyclerView) findViewById(R.id.recycler_view));
-    }
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.recycler_view_activity);
+		init((RecyclerView) findViewById(R.id.recycler_view));
+	}
 
-    private void init(RecyclerView recyclerView) {
-        LinearLayoutManager mLayoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(mLayoutManager);
-        final MyBaseAdapter adapter = new MyBaseAdapter();
-        recyclerView.setAdapter(adapter);
-        final SwipeToDismissTouchListener<RecyclerViewAdapter> touchListener =
-                new SwipeToDismissTouchListener<>(
-                        new RecyclerViewAdapter(recyclerView),
-                        new SwipeToDismissTouchListener.DismissCallbacks<RecyclerViewAdapter>() {
-                            @Override
-                            public boolean canDismiss(int position) {
-                                return true;
-                            }
+	private void init(RecyclerView recyclerView) {
+		LinearLayoutManager mLayoutManager = new LinearLayoutManager(this);
+		recyclerView.setLayoutManager(mLayoutManager);
+		final MyBaseAdapter adapter = new MyBaseAdapter();
+		recyclerView.setAdapter(adapter);
+		final SwipeToDismissTouchListener<RecyclerViewAdapter> touchListener = new SwipeToDismissTouchListener<>(new RecyclerViewAdapter(
+				recyclerView), new SwipeToDismissTouchListener.DismissCallbacks<RecyclerViewAdapter>() {
+			@Override
+			public boolean canDismiss(int position) {
+				return true;
+			}
 
-                            @Override
-                            public void onDismiss(RecyclerViewAdapter view, int position) {
-                                adapter.remove(position);
-                            }
-                        });
+			@Override
+			public void onPendingDismiss(RecyclerViewAdapter viewAdapter, int position, SwipeToDismissTouchListener.SwipeDirection direction) {
 
-        recyclerView.setOnTouchListener(touchListener);
-        // Setting this scroll listener is required to ensure that during ListView scrolling,
-        // we don't look for swipes.
-        recyclerView.setOnScrollListener((RecyclerView.OnScrollListener) touchListener.makeScrollListener());
-        recyclerView.addOnItemTouchListener(new SwipeableItemClickListener(this,
-                new OnItemClickListener() {
-                    @Override
-                    public void onItemClick(View view, int position) {
-                        if (view.getId() == R.id.txt_delete) {
-                            touchListener.processPendingDismisses();
-                        } else if (view.getId() == R.id.txt_undo) {
-                            touchListener.undoPendingDismiss();
-                        } else { // R.id.txt_data
-                            Toast.makeText(RecyclerViewActivity.this, "Position " + position, LENGTH_SHORT).show();
-                        }
-                    }
-                }));
-    }
+			}
 
-    static class MyBaseAdapter extends RecyclerView.Adapter<MyBaseAdapter.MyViewHolder> {
+			@Override
+			public void onDismiss(RecyclerViewAdapter view, int position, SwipeToDismissTouchListener.SwipeDirection direction) {
+				adapter.remove(position);
+			}
+		});
 
-        private static final int SIZE = 100;
+		recyclerView.setOnTouchListener(touchListener);
+		// Setting this scroll listener is required to ensure that during ListView scrolling,
+		// we don't look for swipes.
+		recyclerView.addOnScrollListener((RecyclerView.OnScrollListener) touchListener.makeScrollListener());
+		recyclerView.addOnItemTouchListener(new SwipeableItemClickListener(this, new OnItemClickListener() {
+			@Override
+			public void onItemClick(View view, int position) {
+				if (view.getId() == R.id.txt_right_delete) {
+					touchListener.processPendingDismisses();
+				} else if (view.getId() == R.id.txt_right_undo) {
+					touchListener.undoPendingDismiss();
+				} else { // R.id.txt_data
+					Toast.makeText(RecyclerViewActivity.this, "Position " + position, LENGTH_SHORT).show();
+				}
+			}
+		}));
+	}
 
-        private final List<String> mDataSet = new ArrayList<>();
+	static class MyBaseAdapter extends RecyclerView.Adapter<MyBaseAdapter.MyViewHolder> {
 
-        MyBaseAdapter() {
-            for (int i = 0; i < SIZE; i++)
-                mDataSet.add(i, "This is row number " + i);
-        }
+		private static final int SIZE = 100;
 
-        @Override
-        public MyViewHolder onCreateViewHolder(ViewGroup parent, int position) {
-            return new MyViewHolder(LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.list_item, parent, false));
-        }
+		private final List<String> mDataSet = new ArrayList<>();
 
-        @Override
-        public void onBindViewHolder(MyViewHolder holder, int position) {
-            holder.dataTextView.setText(mDataSet.get(position));
-        }
+		MyBaseAdapter() {
+			for (int i = 0; i < SIZE; i++)
+				mDataSet.add(i, "This is row number " + i);
+		}
 
-        @Override
-        public int getItemCount() {
-            return mDataSet.size();
-        }
+		@Override
+		public MyViewHolder onCreateViewHolder(ViewGroup parent, int position) {
+			return new MyViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item, parent, false));
+		}
 
-        public void remove(int position) {
-            mDataSet.remove(position);
-            notifyItemRemoved(position);
-        }
+		@Override
+		public void onBindViewHolder(MyViewHolder holder, int position) {
+			holder.dataTextView.setText(mDataSet.get(position));
+		}
 
-        static class MyViewHolder extends RecyclerView.ViewHolder {
+		@Override
+		public int getItemCount() {
+			return mDataSet.size();
+		}
 
-            TextView dataTextView;
-            MyViewHolder(View view) {
-                super(view);
-                dataTextView = ((TextView) view.findViewById(R.id.txt_data));
-            }
-        }
-    }
+		public void remove(int position) {
+			mDataSet.remove(position);
+			notifyItemRemoved(position);
+		}
+
+		static class MyViewHolder extends RecyclerView.ViewHolder {
+
+			TextView dataTextView;
+
+			MyViewHolder(View view) {
+				super(view);
+				dataTextView = ((TextView) view.findViewById(R.id.txt_data));
+			}
+		}
+	}
 
 }

@@ -1,54 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:id="@+id/lyt_container"
-    android:background="@color/gray_background">
+	android:id="@+id/lyt_container"
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:background="@color/transparent">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:height="@dimen/list_item_height"
-        android:gravity="center_vertical"
-        android:paddingLeft="@dimen/list_item_padding_sides"
-        android:paddingRight="@dimen/list_item_padding_sides"
-        android:id="@+id/txt_data"
-        android:background="@android:color/white"
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:height="@dimen/list_item_height"
+		android:background="@color/primary_dark"
+		android:orientation="horizontal"
+		android:paddingLeft="@dimen/list_item_padding_sides"
+		android:paddingRight="@dimen/list_item_padding_sides"
+		android:tag="rightUpToDismissContainer"
+		android:visibility="gone"
+		android:weightSum="3">
+	</LinearLayout>
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:height="@dimen/list_item_height"
+		android:background="@color/gray_background"
+		android:orientation="horizontal"
+		android:paddingLeft="@dimen/list_item_padding_sides"
+		android:paddingRight="@dimen/list_item_padding_sides"
+		android:tag="rightUndoContainer"
+		android:visibility="gone"
+		android:weightSum="3">
+
+		<TextView
+			android:id="@+id/txt_right_delete"
+			android:layout_width="0dp"
+			android:layout_height="match_parent"
+			android:layout_weight="2"
+			android:clickable="false"
+			android:gravity="center_vertical"
+			android:hapticFeedbackEnabled="true"
+			android:text="@string/deleted"
+			android:textColor="@android:color/white"/>
+
+		<TextView
+			android:id="@+id/txt_right_undo"
+			android:layout_width="0dp"
+			android:layout_height="match_parent"
+			android:layout_weight="1"
+			android:clickable="false"
+			android:gravity="center"
+			android:text="@string/undo"
+			android:textColor="@color/yellow"/>
+	</LinearLayout>
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:height="@dimen/list_item_height"
+		android:background="@color/green"
+		android:orientation="horizontal"
+		android:paddingLeft="@dimen/list_item_padding_sides"
+		android:paddingRight="@dimen/list_item_padding_sides"
+		android:tag="leftUpToDismissContainer"
+		android:visibility="gone"
+		android:weightSum="3">
+	</LinearLayout>
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:height="@dimen/list_item_height"
+		android:background="@color/gray_background"
+		android:orientation="horizontal"
+		android:paddingLeft="@dimen/list_item_padding_sides"
+		android:paddingRight="@dimen/list_item_padding_sides"
+		android:tag="leftUndoContainer"
+		android:visibility="gone"
+		android:weightSum="3">
+
+		<TextView
+			android:id="@+id/txt_left_done"
+			android:layout_width="0dp"
+			android:layout_height="match_parent"
+			android:layout_weight="2"
+			android:clickable="false"
+			android:gravity="center_vertical"
+			android:hapticFeedbackEnabled="true"
+			android:text="@string/done"
+			android:textColor="@android:color/white"/>
+
+		<TextView
+			android:id="@+id/txt_left_undo"
+			android:layout_width="0dp"
+			android:layout_height="match_parent"
+			android:layout_weight="1"
+			android:clickable="false"
+			android:gravity="center"
+			android:text="@string/undo"
+			android:textColor="@color/blue"/>
+	</LinearLayout>
+
+	<TextView
+		android:id="@+id/txt_data"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:height="@dimen/list_item_height"
+		android:background="@android:color/white"
+		android:gravity="center_vertical"
+		android:paddingLeft="@dimen/list_item_padding_sides"
+		android:paddingRight="@dimen/list_item_padding_sides"
 		android:tag="dataContainer"/>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:visibility="gone"
-        android:weightSum="3"
-        android:height="@dimen/list_item_height"
-        android:paddingLeft="@dimen/list_item_padding_sides"
-        android:paddingRight="@dimen/list_item_padding_sides"
-		android:tag="undoContainer">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:id="@+id/txt_delete"
-            android:gravity="center_vertical"
-            android:text="@string/deleted"
-            android:clickable="false"
-            android:layout_weight="2"
-            android:hapticFeedbackEnabled="true"
-            android:textColor="@android:color/white"/>
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:id="@+id/txt_undo"
-            android:text="@string/undo"
-            android:clickable="false"
-            android:layout_weight="1"
-            android:textColor="@color/yellow"/>
-
-        </LinearLayout>
-
 </FrameLayout>
