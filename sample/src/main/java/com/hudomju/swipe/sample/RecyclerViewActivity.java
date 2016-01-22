@@ -1,10 +1,5 @@
 package com.hudomju.swipe.sample;
 
-import static android.widget.Toast.LENGTH_SHORT;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import android.app.Activity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -19,6 +14,11 @@ import com.hudomju.swipe.OnItemClickListener;
 import com.hudomju.swipe.SwipeToDismissTouchListener;
 import com.hudomju.swipe.SwipeableItemClickListener;
 import com.hudomju.swipe.adapter.RecyclerViewAdapter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static android.widget.Toast.LENGTH_SHORT;
 
 public class RecyclerViewActivity extends Activity {
 
@@ -37,7 +37,7 @@ public class RecyclerViewActivity extends Activity {
 		final SwipeToDismissTouchListener<RecyclerViewAdapter> touchListener = new SwipeToDismissTouchListener<>(new RecyclerViewAdapter(
 				recyclerView), new SwipeToDismissTouchListener.DismissCallbacks<RecyclerViewAdapter>() {
 			@Override
-			public boolean canDismiss(int position) {
+			public boolean canDismiss(int position, SwipeToDismissTouchListener.SwipeDirection direction) {
 				return true;
 			}
 

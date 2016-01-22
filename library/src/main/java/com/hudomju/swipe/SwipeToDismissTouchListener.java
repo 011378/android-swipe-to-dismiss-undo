@@ -181,7 +181,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		/**
 		 * Called to determine whether the given position can be dismissed.
 		 */
-		boolean canDismiss(int position);
+		boolean canDismiss(int position, SwipeDirection direction);
 
 		/**
 		 * Called when an item is swiped away by the user and the undo layout is completely visible. Do NOT remove the list item yet, that
@@ -194,7 +194,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		 * @param direction
 		 *            The direction of the item which is pending for dismissal.
 		 */
-		void onPendingDismiss(SomeCollectionView recyclerView, int position, SwipeToDismissTouchListener.SwipeDirection direction);
+		void onPendingDismiss(SomeCollectionView recyclerView, int position, SwipeDirection direction);
 
 		/**
 		 * Called when the item is completely dismissed and removed from the list, after the undo layout is hidden.
@@ -326,7 +326,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				mDownX = motionEvent.getRawX();
 				mDownY = motionEvent.getRawY();
 				mDownPosition = mRecyclerView.getChildPosition(mRowContainer.container);
-				if (mCallbacks.canDismiss(mDownPosition)) {
+				if (mCallbacks.canDismiss(mDownPosition, mRowContainer.direction)) {
 					mVelocityTracker = VelocityTracker.obtain();
 					mVelocityTracker.addMovement(motionEvent);
 				} else {
@@ -579,7 +579,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		animator.addListener(new AnimatorListenerAdapter() {
 			@Override
 			public void onAnimationEnd(Animator animation) {
-				if (mCallbacks.canDismiss(pendingDismissData.position))
+				if (mCallbacks.canDismiss(pendingDismissData.position, pendingDismissData.rowContainer.direction))
 					mCallbacks.onDismiss(mRecyclerView, pendingDismissData.position, pendingDismissData.rowContainer.direction);
 				pendingDismissData.rowContainer.dataContainer.post(new Runnable() {
 					@Override

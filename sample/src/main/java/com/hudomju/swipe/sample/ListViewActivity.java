@@ -1,10 +1,5 @@
 package com.hudomju.swipe.sample;
 
-import static android.widget.Toast.LENGTH_SHORT;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -19,6 +14,11 @@ import android.widget.Toast;
 
 import com.hudomju.swipe.SwipeToDismissTouchListener;
 import com.hudomju.swipe.adapter.ListViewAdapter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static android.widget.Toast.LENGTH_SHORT;
 
 public class ListViewActivity extends Activity {
 
@@ -36,7 +36,7 @@ public class ListViewActivity extends Activity {
 				new ListViewAdapter(listView),
 				new SwipeToDismissTouchListener.DismissCallbacks<ListViewAdapter>() {
 					@Override
-					public boolean canDismiss(int position) {
+					public boolean canDismiss(int position, SwipeToDismissTouchListener.SwipeDirection direction) {
 						return true;
 					}
 
