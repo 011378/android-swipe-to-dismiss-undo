@@ -27,6 +27,7 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewPropertyAnimator;
 import android.widget.AbsListView;
 import android.widget.ListView;
 
@@ -116,27 +117,60 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 	private long mDismissDelayMillis = -1L; // negative to disable automatic dismissing
 
-	public class RowContainer {
+	private boolean mAlphaAnimationEnabled = true;
 
+	public enum SwipeDirection {
+		NONE, FROM_RIGHT, FROM_LEFT
+	}
+
+	public enum DismissState {
+		NONE, UP_TO_DISMISS, HAS_BEEN_DISMISSED
+	}
+
+	public class RowContainer {
 		final View container;
 
 		final View dataContainer;
 
-		final View undoContainer;
+		final View rightUndoContainer;
 
-		boolean dataContainerHasBeenDismissed;
+		final View leftUndoContainer;
+
+		final View rightUpToDismissContainer;
+
+		final View leftUpToDismissContainer;
+
+		DismissState dismissState;
+
+		SwipeDirection direction;
 
 		public RowContainer(ViewGroup container) {
 			this.container = container;
 			dataContainer = container.findViewWithTag("dataContainer");
-			undoContainer = container.findViewWithTag("undoContainer");
-			dataContainerHasBeenDismissed = false;
+			rightUndoContainer = container.findViewWithTag("rightUndoContainer");
+			leftUndoContainer = container.findViewWithTag("leftUndoContainer");
+			rightUpToDismissContainer = container.findViewWithTag("rightUpToDismissContainer");
+			leftUpToDismissContainer = container.findViewWithTag("leftUpToDismissContainer");
+
+			dismissState = DismissState.NONE;
+			direction = SwipeDirection.NONE;
 		}
 
-		View getCurrentSwipingView() {
-			return dataContainerHasBeenDismissed ? undoContainer : dataContainer;
-		}
+		/**
+		 * The view which should be swiped outside of the window. This one is used during drag & drop.
+		 */
+		public View getCurrentSwipingView() {
+			// Use Undo-views if action should be reverted
+			if (dismissState == DismissState.HAS_BEEN_DISMISSED) {
+				if (direction == SwipeDirection.FROM_RIGHT) {
+					return rightUndoContainer;
+				} else if (direction == SwipeDirection.FROM_LEFT) {
+					return leftUndoContainer;
+				}
+			}
 
+			return dataContainer;
+		}
 	}
 
 	/**
@@ -151,15 +185,16 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 		/**
 		 * Called when an item is swiped away by the user and the undo layout is completely visible. Do NOT remove the list item yet, that
-		 * should be done in {@link #onDismiss(com.hudomju.swipe.adapter.ViewAdapter, int)} This may also be called immediately before and
-		 * item is completely dismissed.
+		 * should be done in onDismiss. This may also be called immediately before and item is completely dismissed.
 		 *
 		 * @param recyclerView
 		 *            The originating {@link android.support.v7.widget.RecyclerView}.
 		 * @param position
 		 *            The position of the dismissed item.
+		 * @param direction
+		 *            The direction of the item which is pending for dismissal.
 		 */
-		void onPendingDismiss(SomeCollectionView recyclerView, int position);
+		void onPendingDismiss(SomeCollectionView recyclerView, int position, SwipeToDismissTouchListener.SwipeDirection direction);
 
 		/**
 		 * Called when the item is completely dismissed and removed from the list, after the undo layout is hidden.
@@ -169,7 +204,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		 * @param position
 		 *            The position of the dismissed item.
 		 */
-		void onDismiss(SomeCollectionView recyclerView, int position);
+		void onDismiss(SomeCollectionView recyclerView, int position, SwipeDirection direction);
 	}
 
 	/**
@@ -210,6 +245,16 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	 */
 	public void setDismissDelay(long dismissDelayMillis) {
 		this.mDismissDelayMillis = dismissDelayMillis;
+	}
+
+	/**
+	 * Set if there should be an alpha transition when swiping
+	 *
+	 * @param enableAlphaAnimation
+	 *            Should there be shown an alpha animation.
+	 */
+	public void setAlphaAnimation(boolean enableAlphaAnimation) {
+		this.mAlphaAnimationEnabled = enableAlphaAnimation;
 	}
 
 	/**
@@ -262,11 +307,17 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				if (rect.contains(x, y)) {
 					assert (child instanceof ViewGroup && ((ViewGroup) child).getChildCount() == 2) : "Each child needs to extend from ViewGroup and have two children";
 
-					boolean dataContainerHasBeenDismissed = mPendingDismiss != null
+					boolean dataContainerHasBeenDismissed = (mPendingDismiss != null)
 							&& mPendingDismiss.position == mRecyclerView.getChildPosition(child)
-							&& mPendingDismiss.rowContainer.dataContainerHasBeenDismissed;
+							&& (mPendingDismiss.rowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED);
 					mRowContainer = new RowContainer((ViewGroup) child);
-					mRowContainer.dataContainerHasBeenDismissed = dataContainerHasBeenDismissed;
+
+					if (dataContainerHasBeenDismissed) {
+						mRowContainer.dismissState = DismissState.HAS_BEEN_DISMISSED;
+					} else {
+						mRowContainer.dismissState = DismissState.NONE;
+					}
+
 					break;
 				}
 			}
@@ -292,8 +343,15 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 			if (mRowContainer != null && mSwiping) {
 				// cancel
-				mRowContainer.getCurrentSwipingView().animate().translationX(0).alpha(1).setDuration(mAnimationTime).setListener(null);
+				mRowContainer.dismissState = DismissState.NONE;
+
+				ViewPropertyAnimator viewPropertyAnimator = mRowContainer.getCurrentSwipingView().animate().translationX(0);
+				if (mAlphaAnimationEnabled) {
+					viewPropertyAnimator.alpha(1);
+				}
+				viewPropertyAnimator.setDuration(mAnimationTime).setListener(null);
 			}
+
 			mVelocityTracker.recycle();
 			mVelocityTracker = null;
 			mDownX = 0;
@@ -329,22 +387,29 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				// dismiss
 				final RowContainer downView = mRowContainer; // mDownView gets null'd before animation ends
 				final int downPosition = mDownPosition;
-				mRowContainer
+
+				ViewPropertyAnimator viewPropertyAnimator = mRowContainer
 						.getCurrentSwipingView()
 						.animate()
-						.translationX(dismissRight ? mViewWidth : -mViewWidth)
-						.alpha(0)
-						.setDuration(mAnimationTime)
-						.setListener(new AnimatorListenerAdapter() {
-							@Override
-							public void onAnimationEnd(Animator animation) {
-								performDismiss(downView, downPosition);
-							}
-						});
+						.translationX(dismissRight ? mViewWidth : -mViewWidth);
+				if (mAlphaAnimationEnabled) {
+					viewPropertyAnimator.alpha(0);
+				}
+				viewPropertyAnimator.setDuration(mAnimationTime).setListener(new AnimatorListenerAdapter() {
+					@Override
+					public void onAnimationEnd(Animator animation) {
+						performDismiss(downView, downPosition);
+					}
+				});
 			} else {
 				// cancel
-				mRowContainer.getCurrentSwipingView().animate().translationX(0).alpha(1).setDuration(mAnimationTime).setListener(null);
+				ViewPropertyAnimator viewPropertyAnimator = mRowContainer.getCurrentSwipingView().animate().translationX(0);
+				if (mAlphaAnimationEnabled) {
+					viewPropertyAnimator.alpha(1);
+				}
+				viewPropertyAnimator.setDuration(mAnimationTime).setListener(null);
 			}
+
 			mVelocityTracker.recycle();
 			mVelocityTracker = null;
 			mDownX = 0;
@@ -357,6 +422,10 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 		case MotionEvent.ACTION_MOVE: {
 			if (mVelocityTracker == null || mPaused) {
+				break;
+			}
+
+			if (mRowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED) {
 				break;
 			}
 
@@ -376,9 +445,23 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 			}
 
 			if (mSwiping) {
+				mRowContainer.dismissState = DismissState.UP_TO_DISMISS;
+				if (deltaX > 0) {
+					mRowContainer.direction = SwipeDirection.FROM_LEFT;
+					mRowContainer.leftUpToDismissContainer.setVisibility(View.VISIBLE);
+					mRowContainer.rightUpToDismissContainer.setVisibility(View.GONE);
+				} else {
+					mRowContainer.direction = SwipeDirection.FROM_RIGHT;
+					mRowContainer.rightUpToDismissContainer.setVisibility(View.VISIBLE);
+					mRowContainer.leftUpToDismissContainer.setVisibility(View.GONE);
+				}
+
 				mRowContainer.getCurrentSwipingView().setTranslationX(deltaX - mSwipingSlop);
 				// Comment line below to disable alpha fade on initial swipe
-				mRowContainer.getCurrentSwipingView().setAlpha(Math.max(0f, Math.min(1f, 1f - 2f * Math.abs(deltaX) / mViewWidth)));
+
+				if (mAlphaAnimationEnabled) {
+					mRowContainer.getCurrentSwipingView().setAlpha(Math.max(0f, Math.min(1f, 1f - 2f * Math.abs(deltaX) / mViewWidth)));
+				}
 				return true;
 			}
 			break;
@@ -421,11 +504,19 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	}
 
 	private void addPendingDismiss(RowContainer dismissView, int dismissPosition) {
-		dismissView.dataContainerHasBeenDismissed = true;
-		dismissView.undoContainer.setVisibility(View.VISIBLE);
+		dismissView.dismissState = DismissState.HAS_BEEN_DISMISSED;
+
+		if (dismissView.direction == SwipeDirection.FROM_RIGHT) {
+			dismissView.rightUndoContainer.setVisibility(View.VISIBLE);
+			dismissView.rightUpToDismissContainer.setVisibility(View.GONE);
+		} else if (dismissView.direction == SwipeDirection.FROM_LEFT) {
+			dismissView.leftUndoContainer.setVisibility(View.VISIBLE);
+			dismissView.leftUpToDismissContainer.setVisibility(View.GONE);
+		}
+
 		mPendingDismiss = new PendingDismissData(dismissPosition, dismissView);
 		// Notify the callbacks
-		mCallbacks.onPendingDismiss(mRecyclerView, dismissPosition);
+		mCallbacks.onPendingDismiss(mRecyclerView, dismissPosition, dismissView.direction);
 		// Automatically dismiss the item after a certain delay
 		if (mDismissDelayMillis >= 0L) {
 			mHandler.removeCallbacks(mDismissRunnable);
@@ -451,7 +542,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	 * @return whether there are any pending rows to be dismissed.
 	 */
 	public boolean existPendingDismisses() {
-		return mPendingDismiss != null && mPendingDismiss.rowContainer.dataContainerHasBeenDismissed;
+		return mPendingDismiss != null && (mPendingDismiss.rowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED);
 	}
 
 	/**
@@ -462,8 +553,17 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	public boolean undoPendingDismiss() {
 		boolean existPendingDismisses = existPendingDismisses();
 		if (existPendingDismisses) {
-			mPendingDismiss.rowContainer.undoContainer.setVisibility(View.GONE);
-			mPendingDismiss.rowContainer.dataContainer.animate().translationX(0).alpha(1).setDuration(mAnimationTime).setListener(null);
+			if (mPendingDismiss.rowContainer.direction == SwipeDirection.FROM_RIGHT) {
+				mPendingDismiss.rowContainer.rightUndoContainer.setVisibility(View.GONE);
+			} else if (mPendingDismiss.rowContainer.direction == SwipeDirection.FROM_LEFT) {
+				mPendingDismiss.rowContainer.leftUndoContainer.setVisibility(View.GONE);
+			}
+
+			ViewPropertyAnimator viewPropertyAnimator = mPendingDismiss.rowContainer.dataContainer.animate().translationX(0);
+			if (mAlphaAnimationEnabled) {
+				viewPropertyAnimator.alpha(1);
+			}
+			viewPropertyAnimator.setDuration(mAnimationTime).setListener(null);
 			mPendingDismiss = null;
 		}
 		return existPendingDismisses;
@@ -480,15 +580,31 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 			@Override
 			public void onAnimationEnd(Animator animation) {
 				if (mCallbacks.canDismiss(pendingDismissData.position))
-					mCallbacks.onDismiss(mRecyclerView, pendingDismissData.position);
+					mCallbacks.onDismiss(mRecyclerView, pendingDismissData.position, pendingDismissData.rowContainer.direction);
 				pendingDismissData.rowContainer.dataContainer.post(new Runnable() {
 					@Override
 					public void run() {
 						pendingDismissData.rowContainer.dataContainer.setTranslationX(0);
-						pendingDismissData.rowContainer.dataContainer.setAlpha(1);
-						pendingDismissData.rowContainer.undoContainer.setVisibility(View.GONE);
-						pendingDismissData.rowContainer.undoContainer.setTranslationX(0);
-						pendingDismissData.rowContainer.undoContainer.setAlpha(1);
+
+						if (mAlphaAnimationEnabled) {
+							pendingDismissData.rowContainer.dataContainer.setAlpha(1);
+						}
+
+						if (pendingDismissData.rowContainer.direction == SwipeDirection.FROM_RIGHT) {
+							pendingDismissData.rowContainer.rightUndoContainer.setVisibility(View.GONE);
+							pendingDismissData.rowContainer.rightUndoContainer.setTranslationX(0);
+
+							if (mAlphaAnimationEnabled) {
+								pendingDismissData.rowContainer.rightUndoContainer.setAlpha(1);
+							}
+						} else if (pendingDismissData.rowContainer.direction == SwipeDirection.FROM_LEFT) {
+							pendingDismissData.rowContainer.leftUndoContainer.setVisibility(View.GONE);
+							pendingDismissData.rowContainer.leftUndoContainer.setTranslationX(0);
+
+							if (mAlphaAnimationEnabled) {
+								pendingDismissData.rowContainer.leftUndoContainer.setAlpha(1);
+							}
+						}
 
 						lp.height = originalHeight;
 						pendingDismissData.rowContainer.container.setLayoutParams(lp);

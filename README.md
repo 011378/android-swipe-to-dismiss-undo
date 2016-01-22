@@ -1,8 +1,8 @@
-android-swipe-to-dismiss-undo
+android-swipe-to-dismiss-undo-in-both-directions
 =============================
 
 Library to make the items in a `ListView` or `RecyclerView` dismissable with the possibility to undo
-it, using your own view to provide this functionality like the Gmail app for Android does.
+it into two directions, using your own view to provide this functionality like the Gmail app for Android does.
 
 
 
@@ -12,19 +12,12 @@ it, using your own view to provide this functionality like the Gmail app for And
 Add the following to your `build.gradle`:
 
     repositories {
-		mavenCentral()
+		maven { url "https://jitpack.io" }
 	}
 
 	dependencies {
-		compile compile 'com.hudomju:swipe-to-dismiss-undo:1.0'
+		compile 'com.github.michaelmuenzer:android-swipe-to-dismiss-undo:v1.0.3'
 	}
-	
-**Or**:
-
-* [Download the latest .jar file][https://oss.sonatype.org/content/repositories/releases/com/hudomju/swipe-to-dismiss-undo/1.0/swipe-to-dismiss-undo-1.0-sources.jar]
-* Add the .jar files to your project's `libs` folder, or add them as external jars to your project's
- build path.
-
 
 Create a Layout
 ===============
@@ -34,7 +27,7 @@ root view of your item layout. Inside the ViewGroup, add one view that contains 
 the row (your primary layout when the row hasn't been dismissed yet) and another view that contains 
 the contents of the dismiss layout (i.e. with an undo button).
 
-Finally, just set the `tag` XML attribute on the two ViewGroups that you are using to display - `dataContainer` for your "front" view, and `undoContainer` for the "back" view
+Finally, just set the `tag` XML attribute on the two ViewGroups that you are using to display - `dataContainer` for your "front" view, and `leftUndoContainer`, `rightUndoContainer` for the "back" views
 
 For example, the following layout uses a FrameLayout with two child views: a TextView to contain 
 the main content (populated by an Adapter at runtime), and a LinearLayout for the undo layout.
@@ -67,7 +60,7 @@ the main content (populated by an Adapter at runtime), and a LinearLayout for th
             android:height="@dimen/list_item_height"
             android:paddingLeft="@dimen/list_item_padding_sides"
             android:paddingRight="@dimen/list_item_padding_sides"
-            android:tag="undoContainer">
+            android:tag="leftUndoContainer">
 
             <TextView
                 android:layout_width="0dp"
@@ -97,7 +90,6 @@ the main content (populated by an Adapter at runtime), and a LinearLayout for th
 NOTE that the second child in the layout (here the LinearLayout), must have the visibility set to
 GONE, or both the data and the undo layout will be displayed in the row at the same time.
 
-
 Usage
 ==============
 
@@ -114,7 +106,11 @@ final SwipeToDismissTouchListener<ListViewAdapter> touchListener =
                             }
 
                             @Override
-                            public void onDismiss(ListViewAdapter view, int position) {
+                            public void onPendingDismiss(SomeCollectionView recyclerView, int position, SwipeToDismissTouchListener.SwipeDirection direction) {
+                            }
+
+                            @Override
+                            public void onDismiss(ListViewAdapter view, int position, SwipeDirection direction) {
                                 adapter.remove(position);
                             }
                         });
@@ -145,7 +141,11 @@ final SwipeToDismissTouchListener<RecyclerViewAdapter> touchListener =
                             }
 
                             @Override
-                            public void onDismiss(RecyclerViewAdapter view, int position) {
+                            public void onPendingDismiss(SomeCollectionView recyclerView, int position, SwipeToDismissTouchListener.SwipeDirection direction) {
+                            }
+
+                            @Override
+                            public void onDismiss(ListViewAdapter view, int position, SwipeDirection direction) {
                                 adapter.remove(position);
                             }
                         });
@@ -171,10 +171,4 @@ recyclerView.addOnItemTouchListener(new SwipeableItemClickListener(this,
 Special Thanks
 ==============
 
-Romman Nurik for the initial contribution with [swipe to dismiss](https://github.com/romannurik/Android-SwipeToDismiss) for `ListView`
-
-See the original [Google+ post](https://plus.google.com/+RomanNurik/posts/Fgo1p5uWZLu) for discussion.
-
-See also [Jake Wharton's port](https://github.com/JakeWharton/SwipeToDismissNOA) of this sample code to old versions of Android using the [NineOldAndroids](http://nineoldandroids.com/) compatibility library.
-
-<img src="https://lh4.googleusercontent.com/-b0pxPcJBF1o/T-ZWx9NZSRI/AAAAAAAAe_Q/PAKmNzGSbzs/w635-h688-no/foo.png" width="300">
+Romman Nurik for the initial contribution with [swipe to dismiss](https://github.com/romannurik/Android-SwipeToDismiss) for `ListView`. As well I want to thank hudomju for the undo extension in [android-swipe-to-dismiss-undo](https://github.com/hudomju/android-swipe-to-dismiss-undo) 
