@@ -52,6 +52,7 @@ public class ListViewActivity extends Activity {
 					}
 				});
 		touchListener.setAlphaAnimation(false);
+		touchListener.setSlop(0);
 		listView.setOnTouchListener(touchListener);
 		// Setting this scroll listener is required to ensure that during ListView scrolling,
 		// we don't look for swipes.

@@ -127,6 +127,10 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		NONE, UP_TO_DISMISS, HAS_BEEN_DISMISSED
 	}
 
+	public enum CanDismissState {
+		NONE, TRUE, FALSE
+	}
+
 	public class RowContainer {
 		final View container;
 
@@ -139,6 +143,10 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		final View rightUpToDismissContainer;
 
 		final View leftUpToDismissContainer;
+
+		CanDismissState rightCanDismissState = CanDismissState.NONE;
+
+		CanDismissState leftCanDismissState = CanDismissState.NONE;
 
 		DismissState dismissState;
 
@@ -258,6 +266,13 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	}
 
 	/**
+	 * Set the slop if there should be any. If this method is not called the sytsems default value si used.
+	 */
+	public void setSlop(int slop) {
+		mSlop = slop;
+	}
+
+	/**
 	 * Returns an {@link android.widget.AbsListView.OnScrollListener} to be added to the {@link android.widget.ListView} using
 	 * {@link android.widget.ListView#setOnScrollListener(android.widget.AbsListView.OnScrollListener)}. If a scroll listener is already
 	 * assigned, the caller should still pass scroll changes through to this listener. This will ensure that this
@@ -326,12 +341,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				mDownX = motionEvent.getRawX();
 				mDownY = motionEvent.getRawY();
 				mDownPosition = mRecyclerView.getChildPosition(mRowContainer.container);
-				if (mCallbacks.canDismiss(mDownPosition, mRowContainer.direction)) {
-					mVelocityTracker = VelocityTracker.obtain();
-					mVelocityTracker.addMovement(motionEvent);
-				} else {
-					mRowContainer = null;
-				}
+				mVelocityTracker = VelocityTracker.obtain();
+				mVelocityTracker.addMovement(motionEvent);
 			}
 			return false;
 		}
@@ -446,6 +457,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 			if (mSwiping) {
 				mRowContainer.dismissState = DismissState.UP_TO_DISMISS;
+
 				if (deltaX > 0) {
 					mRowContainer.direction = SwipeDirection.FROM_LEFT;
 					mRowContainer.leftUpToDismissContainer.setVisibility(View.VISIBLE);
@@ -456,12 +468,35 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 					mRowContainer.leftUpToDismissContainer.setVisibility(View.GONE);
 				}
 
+				if ((mDownPosition != ListView.INVALID_POSITION) || (mRowContainer.direction != SwipeDirection.NONE)) {
+					if ((mRowContainer.leftCanDismissState == CanDismissState.NONE)
+							&& (mRowContainer.direction == SwipeDirection.FROM_LEFT)) {
+						mRowContainer.leftCanDismissState = mCallbacks.canDismiss(mDownPosition, mRowContainer.direction) ? CanDismissState.TRUE
+								: CanDismissState.FALSE;
+
+						if (mRowContainer.leftCanDismissState == CanDismissState.FALSE) {
+							mRowContainer = null;
+							break;
+						}
+					} else if ((mRowContainer.rightCanDismissState == CanDismissState.NONE)
+							&& (mRowContainer.direction == SwipeDirection.FROM_RIGHT)) {
+						mRowContainer.rightCanDismissState = mCallbacks.canDismiss(mDownPosition, mRowContainer.direction) ? CanDismissState.TRUE
+								: CanDismissState.FALSE;
+
+						if (mRowContainer.rightCanDismissState == CanDismissState.FALSE) {
+							mRowContainer = null;
+							break;
+						}
+					}
+				}
+
 				mRowContainer.getCurrentSwipingView().setTranslationX(deltaX - mSwipingSlop);
 				// Comment line below to disable alpha fade on initial swipe
 
 				if (mAlphaAnimationEnabled) {
 					mRowContainer.getCurrentSwipingView().setAlpha(Math.max(0f, Math.min(1f, 1f - 2f * Math.abs(deltaX) / mViewWidth)));
 				}
+
 				return true;
 			}
 			break;
