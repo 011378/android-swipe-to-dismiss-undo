@@ -148,9 +148,9 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 		CanDismissState leftCanDismissState = CanDismissState.NONE;
 
-		DismissState dismissState;
+		DismissState dismissState = DismissState.NONE;;
 
-		SwipeDirection direction;
+		SwipeDirection direction = SwipeDirection.NONE;
 
 		public RowContainer(ViewGroup container) {
 			this.container = container;
@@ -159,9 +159,6 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 			leftUndoContainer = container.findViewWithTag("leftUndoContainer");
 			rightUpToDismissContainer = container.findViewWithTag("rightUpToDismissContainer");
 			leftUpToDismissContainer = container.findViewWithTag("leftUpToDismissContainer");
-
-			dismissState = DismissState.NONE;
-			direction = SwipeDirection.NONE;
 		}
 
 		/**
@@ -436,7 +433,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				break;
 			}
 
-			if (mRowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED) {
+			if ((mRowContainer == null) || (mRowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED)) {
 				break;
 			}
 
