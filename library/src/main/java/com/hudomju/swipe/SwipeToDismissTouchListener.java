@@ -431,7 +431,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		}
 
 		case MotionEvent.ACTION_MOVE: {
-			if (mVelocityTracker == null || mPaused || (mRowContainer == null)
+			if (mVelocityTracker == null || mPaused || (mRowContainer == null) || (mRowContainer.getCurrentSwipingView() == null)
 					|| (mRowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED)) {
 				break;
 			}
