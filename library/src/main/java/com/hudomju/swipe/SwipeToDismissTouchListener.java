@@ -349,7 +349,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				break;
 			}
 
-			if (mRowContainer != null && mSwiping) {
+			if ((mRowContainer != null) && (mRowContainer.getCurrentSwipingView() != null) && mSwiping) {
 				// cancel
 				mRowContainer.dismissState = DismissState.NONE;
 
@@ -371,7 +371,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		}
 
 		case MotionEvent.ACTION_UP: {
-			if (mVelocityTracker == null) {
+			if ((mVelocityTracker == null) || (mRowContainer == null) || (mRowContainer.getCurrentSwipingView() == null)) {
 				break;
 			}
 
@@ -383,6 +383,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 			float absVelocityY = Math.abs(mVelocityTracker.getYVelocity());
 			boolean dismiss = false;
 			boolean dismissRight = false;
+
 			if (Math.abs(deltaX) > mViewWidth / 2 && mSwiping) {
 				dismiss = true;
 				dismissRight = deltaX > 0;
@@ -391,6 +392,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				dismiss = (velocityX < 0) == (deltaX < 0);
 				dismissRight = mVelocityTracker.getXVelocity() > 0;
 			}
+
 			if (dismiss && mDownPosition != ListView.INVALID_POSITION) {
 				// dismiss
 				final RowContainer downView = mRowContainer; // mDownView gets null'd before animation ends
@@ -429,11 +431,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		}
 
 		case MotionEvent.ACTION_MOVE: {
-			if (mVelocityTracker == null || mPaused) {
-				break;
-			}
-
-			if ((mRowContainer == null) || (mRowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED)) {
+			if (mVelocityTracker == null || mPaused || (mRowContainer == null)
+					|| (mRowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED)) {
 				break;
 			}
 
