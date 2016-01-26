@@ -152,6 +152,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 		SwipeDirection direction = SwipeDirection.NONE;
 
+		boolean animationInProgress = false;
+
 		public RowContainer(ViewGroup container) {
 			this.container = container;
 			dataContainer = container.findViewWithTag("dataContainer");
@@ -322,12 +324,15 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 					boolean dataContainerHasBeenDismissed = (mPendingDismiss != null)
 							&& mPendingDismiss.position == mRecyclerView.getChildPosition(child)
 							&& (mPendingDismiss.rowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED);
-					mRowContainer = new RowContainer((ViewGroup) child);
 
-					if (dataContainerHasBeenDismissed) {
-						mRowContainer.dismissState = DismissState.HAS_BEEN_DISMISSED;
-					} else {
-						mRowContainer.dismissState = DismissState.NONE;
+					if (mRowContainer == null) {
+						mRowContainer = new RowContainer((ViewGroup) child);
+
+						if (dataContainerHasBeenDismissed) {
+							mRowContainer.dismissState = DismissState.HAS_BEEN_DISMISSED;
+						} else {
+							mRowContainer.dismissState = DismissState.NONE;
+						}
 					}
 
 					break;
@@ -341,6 +346,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				mVelocityTracker = VelocityTracker.obtain();
 				mVelocityTracker.addMovement(motionEvent);
 			}
+
+			// return true;
 			return false;
 		}
 
@@ -353,20 +360,10 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				// cancel
 				mRowContainer.dismissState = DismissState.NONE;
 
-				ViewPropertyAnimator viewPropertyAnimator = mRowContainer.getCurrentSwipingView().animate().translationX(0);
-				if (mAlphaAnimationEnabled) {
-					viewPropertyAnimator.alpha(1);
-				}
-				viewPropertyAnimator.setDuration(mAnimationTime).setListener(null);
+				setRowTransition(true, 0);
 			}
 
-			mVelocityTracker.recycle();
-			mVelocityTracker = null;
-			mDownX = 0;
-			mDownY = 0;
-			mRowContainer = null;
-			mDownPosition = ListView.INVALID_POSITION;
-			mSwiping = false;
+			tearDownRowContainerData();
 			break;
 		}
 
@@ -385,12 +382,20 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 			boolean dismissRight = false;
 
 			if (Math.abs(deltaX) > mViewWidth / 2 && mSwiping) {
-				dismiss = true;
 				dismissRight = deltaX > 0;
+
+				if ((dismissRight && (mRowContainer.leftCanDismissState == CanDismissState.TRUE))
+						|| (!dismissRight && (mRowContainer.rightCanDismissState == CanDismissState.TRUE))) {
+					dismiss = true;
+				}
 			} else if (mMinFlingVelocity <= absVelocityX && absVelocityX <= mMaxFlingVelocity && absVelocityY < absVelocityX && mSwiping) {
 				// dismiss only if flinging in the same direction as dragging
-				dismiss = (velocityX < 0) == (deltaX < 0);
 				dismissRight = mVelocityTracker.getXVelocity() > 0;
+
+				if ((dismissRight && (mRowContainer.leftCanDismissState == CanDismissState.TRUE))
+						|| (!dismissRight && (mRowContainer.rightCanDismissState == CanDismissState.TRUE))) {
+					dismiss = (velocityX < 0) == (deltaX < 0);
+				}
 			}
 
 			if (dismiss && mDownPosition != ListView.INVALID_POSITION) {
@@ -398,35 +403,21 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				final RowContainer downView = mRowContainer; // mDownView gets null'd before animation ends
 				final int downPosition = mDownPosition;
 
-				ViewPropertyAnimator viewPropertyAnimator = mRowContainer
-						.getCurrentSwipingView()
-						.animate()
-						.translationX(dismissRight ? mViewWidth : -mViewWidth);
-				if (mAlphaAnimationEnabled) {
-					viewPropertyAnimator.alpha(0);
-				}
-				viewPropertyAnimator.setDuration(mAnimationTime).setListener(new AnimatorListenerAdapter() {
+				int translationX = dismissRight ? mViewWidth : -mViewWidth;
+				AnimatorListenerAdapter listener = new AnimatorListenerAdapter() {
 					@Override
 					public void onAnimationEnd(Animator animation) {
+						tearDownRowContainerData();
 						performDismiss(downView, downPosition);
 					}
-				});
+				};
+
+				setRowTransition(true, translationX, 1, listener);
 			} else {
 				// cancel
-				ViewPropertyAnimator viewPropertyAnimator = mRowContainer.getCurrentSwipingView().animate().translationX(0);
-				if (mAlphaAnimationEnabled) {
-					viewPropertyAnimator.alpha(1);
-				}
-				viewPropertyAnimator.setDuration(mAnimationTime).setListener(null);
+				setRowTransition(true, 0);
 			}
 
-			mVelocityTracker.recycle();
-			mVelocityTracker = null;
-			mDownX = 0;
-			mDownY = 0;
-			mRowContainer = null;
-			mDownPosition = ListView.INVALID_POSITION;
-			mSwiping = false;
 			break;
 		}
 
@@ -452,53 +443,119 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 			}
 
 			if (mSwiping) {
-				mRowContainer.dismissState = DismissState.UP_TO_DISMISS;
-
+				// Which direction is the user swiping
 				if (deltaX > 0) {
 					mRowContainer.direction = SwipeDirection.FROM_LEFT;
-					mRowContainer.leftUpToDismissContainer.setVisibility(View.VISIBLE);
-					mRowContainer.rightUpToDismissContainer.setVisibility(View.GONE);
 				} else {
 					mRowContainer.direction = SwipeDirection.FROM_RIGHT;
-					mRowContainer.rightUpToDismissContainer.setVisibility(View.VISIBLE);
-					mRowContainer.leftUpToDismissContainer.setVisibility(View.GONE);
 				}
 
+				// Valid click happened before
 				if ((mDownPosition != ListView.INVALID_POSITION) || (mRowContainer.direction != SwipeDirection.NONE)) {
+
+					// Set canDismiss states just in time
 					if ((mRowContainer.leftCanDismissState == CanDismissState.NONE)
 							&& (mRowContainer.direction == SwipeDirection.FROM_LEFT)) {
 						mRowContainer.leftCanDismissState = mCallbacks.canDismiss(mDownPosition, mRowContainer.direction) ? CanDismissState.TRUE
 								: CanDismissState.FALSE;
-
-						if (mRowContainer.leftCanDismissState == CanDismissState.FALSE) {
-							mRowContainer = null;
-							break;
-						}
 					} else if ((mRowContainer.rightCanDismissState == CanDismissState.NONE)
 							&& (mRowContainer.direction == SwipeDirection.FROM_RIGHT)) {
 						mRowContainer.rightCanDismissState = mCallbacks.canDismiss(mDownPosition, mRowContainer.direction) ? CanDismissState.TRUE
 								: CanDismissState.FALSE;
-
-						if (mRowContainer.rightCanDismissState == CanDismissState.FALSE) {
-							mRowContainer = null;
-							break;
-						}
 					}
 				}
 
-				mRowContainer.getCurrentSwipingView().setTranslationX(deltaX - mSwipingSlop);
-				// Comment line below to disable alpha fade on initial swipe
+				if (((mRowContainer.leftCanDismissState == CanDismissState.TRUE) && (deltaX > 0))
+						|| ((mRowContainer.rightCanDismissState == CanDismissState.TRUE) && (deltaX < 0))) {
+					if (deltaX > 0) {
+						mRowContainer.leftUpToDismissContainer.setVisibility(View.VISIBLE);
+						mRowContainer.rightUpToDismissContainer.setVisibility(View.GONE);
+					} else {
+						mRowContainer.rightUpToDismissContainer.setVisibility(View.VISIBLE);
+						mRowContainer.leftUpToDismissContainer.setVisibility(View.GONE);
+					}
 
-				if (mAlphaAnimationEnabled) {
-					mRowContainer.getCurrentSwipingView().setAlpha(Math.max(0f, Math.min(1f, 1f - 2f * Math.abs(deltaX) / mViewWidth)));
+					float translationX = deltaX - mSwipingSlop;
+					float alpha = Math.max(0f, Math.min(1f, 1f - 2f * Math.abs(deltaX) / mViewWidth));
+					setRowTransition(false, translationX, alpha);
 				}
 
 				return true;
 			}
+
 			break;
 		}
 		}
 		return false;
+	}
+
+	private void setRowTransition(boolean animate, float translationX) {
+		setRowTransition(animate, translationX, 1);
+	}
+
+	private void setRowTransition(boolean animate, float translationX, float alpha) {
+		AnimatorListenerAdapter listener = new AnimatorListenerAdapter() {
+			@Override
+			public void onAnimationStart(Animator animation) {
+				super.onAnimationStart(animation);
+
+				if (mRowContainer != null) {
+					mRowContainer.animationInProgress = true;
+				}
+			}
+
+			@Override
+			public void onAnimationEnd(Animator animation) {
+				super.onAnimationEnd(animation);
+
+				if (mRowContainer != null) {
+					mRowContainer.animationInProgress = false;
+				}
+
+				tearDownRowContainerData();
+			}
+		};
+
+		setRowTransition(animate, translationX, alpha, listener);
+	}
+
+	private void setRowTransition(boolean animate, float translationX, float alpha, @NonNull AnimatorListenerAdapter listener) {
+		if (mRowContainer == null || mRowContainer.getCurrentSwipingView() == null) {
+			return;
+		}
+
+		if (!mRowContainer.animationInProgress) {
+			View currentSwipingView = mRowContainer.getCurrentSwipingView();
+			if (animate) {
+				ViewPropertyAnimator viewPropertyAnimator = currentSwipingView.animate();
+				viewPropertyAnimator.setDuration(mAnimationTime);
+				viewPropertyAnimator.translationX(translationX);
+
+				if (mAlphaAnimationEnabled) {
+					viewPropertyAnimator.alpha(alpha);
+				}
+				viewPropertyAnimator.setListener(listener);
+			} else {
+				currentSwipingView.setTranslationX(translationX);
+
+				if (mAlphaAnimationEnabled) {
+					currentSwipingView.setAlpha(alpha);
+				}
+			}
+		}
+	}
+
+	private void tearDownRowContainerData() {
+		if (mVelocityTracker != null) {
+			mVelocityTracker.recycle();
+		}
+
+		mVelocityTracker = null;
+		mDownX = 0;
+		mDownY = 0;
+		mRowContainer = null;
+		mDownPosition = ListView.INVALID_POSITION;
+		mSwiping = false;
 	}
 
 	class PendingDismissData implements Comparable<PendingDismissData> {
