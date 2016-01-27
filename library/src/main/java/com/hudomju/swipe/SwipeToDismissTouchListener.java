@@ -56,10 +56,10 @@ import com.hudomju.swipe.adapter.ViewAdapter;
  * 			public void onDismiss(ListView listView, int[] reverseSortedPositions) {
  * 				for (int position : reverseSortedPositions) {
  * 					adapter.remove(adapter.getItem(position));
- * 				}
+ *                }
  * 				adapter.notifyDataSetChanged();
- * 			}
- * 		});
+ *            }
+ *        });
  * recyclerView.setOnTouchListener(touchListener);
  * recyclerView.setOnScrollListener(touchListener.makeScrollListener());
  * </pre>
@@ -148,7 +148,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 		CanDismissState leftCanDismissState = CanDismissState.NONE;
 
-		DismissState dismissState = DismissState.NONE;;
+		DismissState dismissState = DismissState.NONE;
+		;
 
 		SwipeDirection direction = SwipeDirection.NONE;
 
@@ -194,22 +195,17 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		 * Called when an item is swiped away by the user and the undo layout is completely visible. Do NOT remove the list item yet, that
 		 * should be done in onDismiss. This may also be called immediately before and item is completely dismissed.
 		 *
-		 * @param recyclerView
-		 *            The originating {@link android.support.v7.widget.RecyclerView}.
-		 * @param position
-		 *            The position of the dismissed item.
-		 * @param direction
-		 *            The direction of the item which is pending for dismissal.
+		 * @param recyclerView The originating {@link android.support.v7.widget.RecyclerView}.
+		 * @param position     The position of the dismissed item.
+		 * @param direction    The direction of the item which is pending for dismissal.
 		 */
 		void onPendingDismiss(SomeCollectionView recyclerView, int position, SwipeDirection direction);
 
 		/**
 		 * Called when the item is completely dismissed and removed from the list, after the undo layout is hidden.
 		 *
-		 * @param recyclerView
-		 *            The originating {@link android.support.v7.widget.RecyclerView}.
-		 * @param position
-		 *            The position of the dismissed item.
+		 * @param recyclerView The originating {@link android.support.v7.widget.RecyclerView}.
+		 * @param position     The position of the dismissed item.
 		 */
 		void onDismiss(SomeCollectionView recyclerView, int position, SwipeDirection direction);
 	}
@@ -217,10 +213,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	/**
 	 * Constructs a new swipe-to-dismiss touch listener for the given list view.
 	 *
-	 * @param recyclerView
-	 *            The list view whose items should be dismissable.
-	 * @param callbacks
-	 *            The callback to trigger when the user has indicated that she would like to dismiss one or more list items.
+	 * @param recyclerView The list view whose items should be dismissable.
+	 * @param callbacks    The callback to trigger when the user has indicated that she would like to dismiss one or more list items.
 	 */
 	public SwipeToDismissTouchListener(SomeCollectionView recyclerView, DismissCallbacks<SomeCollectionView> callbacks) {
 		ViewConfiguration vc = ViewConfiguration.get(recyclerView.getContext());
@@ -236,8 +230,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	/**
 	 * Enables or disables (pauses or resumes) watching for swipe-to-dismiss gestures.
 	 *
-	 * @param enabled
-	 *            Whether or not to watch for gestures.
+	 * @param enabled Whether or not to watch for gestures.
 	 */
 	public void setEnabled(boolean enabled) {
 		mPaused = !enabled;
@@ -246,9 +239,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	/**
 	 * Set the delay after which the pending items will be dismissed when there was no user action. Set to a negative value to disable
 	 * automatic dismissing items.
-	 * 
-	 * @param dismissDelayMillis
-	 *            The delay between onPendingDismiss and onDismiss calls, in milliseconds.
+	 *
+	 * @param dismissDelayMillis The delay between onPendingDismiss and onDismiss calls, in milliseconds.
 	 */
 	public void setDismissDelay(long dismissDelayMillis) {
 		this.mDismissDelayMillis = dismissDelayMillis;
@@ -257,8 +249,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	/**
 	 * Set if there should be an alpha transition when swiping
 	 *
-	 * @param enableAlphaAnimation
-	 *            Should there be shown an alpha animation.
+	 * @param enableAlphaAnimation Should there be shown an alpha animation.
 	 */
 	public void setAlphaAnimation(boolean enableAlphaAnimation) {
 		this.mAlphaAnimationEnabled = enableAlphaAnimation;
@@ -300,191 +291,194 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		}
 
 		switch (motionEvent.getActionMasked()) {
-		case MotionEvent.ACTION_DOWN: {
-			if (mPaused) {
+			case MotionEvent.ACTION_DOWN: {
+				if (mPaused) {
+					return false;
+				}
+
+				// TODO: ensure this is a finger, and set a flag
+
+				// Find the child view that was touched (perform a hit test)
+				Rect rect = new Rect();
+				int childCount = mRecyclerView.getChildCount();
+				int[] listViewCoords = new int[2];
+				mRecyclerView.getLocationOnScreen(listViewCoords);
+				int x = (int) motionEvent.getRawX() - listViewCoords[0];
+				int y = (int) motionEvent.getRawY() - listViewCoords[1];
+				View child;
+				for (int i = 0; i < childCount; i++) {
+					child = mRecyclerView.getChildAt(i);
+					child.getHitRect(rect);
+					if (rect.contains(x, y)) {
+						assert (child instanceof ViewGroup && ((ViewGroup) child).getChildCount() == 2) : "Each child needs to extend from ViewGroup and have two children";
+
+						boolean dataContainerHasBeenDismissed = (mPendingDismiss != null)
+							&& mPendingDismiss.position == mRecyclerView.getChildPosition(child)
+							&& (mPendingDismiss.rowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED);
+						if (dataContainerHasBeenDismissed) {
+							return false;
+						}
+
+						if (mRowContainer == null) {
+							mRowContainer = new RowContainer((ViewGroup) child);
+
+							if (dataContainerHasBeenDismissed) {
+								mRowContainer.dismissState = DismissState.HAS_BEEN_DISMISSED;
+							} else {
+								mRowContainer.dismissState = DismissState.NONE;
+							}
+						}
+
+						break;
+					}
+				}
+
+				if (mRowContainer != null) {
+					mDownX = motionEvent.getRawX();
+					mDownY = motionEvent.getRawY();
+					mDownPosition = mRecyclerView.getChildPosition(mRowContainer.container);
+					mVelocityTracker = VelocityTracker.obtain();
+					mVelocityTracker.addMovement(motionEvent);
+				}
+
+				// return true;
 				return false;
 			}
 
-			// TODO: ensure this is a finger, and set a flag
+			case MotionEvent.ACTION_CANCEL: {
+				if (mVelocityTracker == null) {
+					break;
+				}
 
-			// Find the child view that was touched (perform a hit test)
-			Rect rect = new Rect();
-			int childCount = mRecyclerView.getChildCount();
-			int[] listViewCoords = new int[2];
-			mRecyclerView.getLocationOnScreen(listViewCoords);
-			int x = (int) motionEvent.getRawX() - listViewCoords[0];
-			int y = (int) motionEvent.getRawY() - listViewCoords[1];
-			View child;
-			for (int i = 0; i < childCount; i++) {
-				child = mRecyclerView.getChildAt(i);
-				child.getHitRect(rect);
-				if (rect.contains(x, y)) {
-					assert (child instanceof ViewGroup && ((ViewGroup) child).getChildCount() == 2) : "Each child needs to extend from ViewGroup and have two children";
+				if ((mRowContainer != null) && (mRowContainer.getCurrentSwipingView() != null) && mSwiping) {
+					// cancel
+					mRowContainer.dismissState = DismissState.NONE;
 
-					boolean dataContainerHasBeenDismissed = (mPendingDismiss != null)
-							&& mPendingDismiss.position == mRecyclerView.getChildPosition(child)
-							&& (mPendingDismiss.rowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED);
+					setRowTransition(true, 0);
+				}
 
-					if (mRowContainer == null) {
-						mRowContainer = new RowContainer((ViewGroup) child);
+				tearDownRowContainerData();
+				break;
+			}
 
-						if (dataContainerHasBeenDismissed) {
-							mRowContainer.dismissState = DismissState.HAS_BEEN_DISMISSED;
-						} else {
-							mRowContainer.dismissState = DismissState.NONE;
+			case MotionEvent.ACTION_UP: {
+				if ((mVelocityTracker == null) || (mRowContainer == null) || (mRowContainer.getCurrentSwipingView() == null)) {
+					break;
+				}
+
+				float deltaX = motionEvent.getRawX() - mDownX;
+				mVelocityTracker.addMovement(motionEvent);
+				mVelocityTracker.computeCurrentVelocity(1000);
+				float velocityX = mVelocityTracker.getXVelocity();
+				float absVelocityX = Math.abs(velocityX);
+				float absVelocityY = Math.abs(mVelocityTracker.getYVelocity());
+				boolean dismiss = false;
+				boolean dismissRight = false;
+
+				if (Math.abs(deltaX) > mViewWidth / 2 && mSwiping) {
+					dismissRight = deltaX > 0;
+
+					if ((dismissRight && (mRowContainer.leftCanDismissState == CanDismissState.TRUE))
+						|| (!dismissRight && (mRowContainer.rightCanDismissState == CanDismissState.TRUE))) {
+						dismiss = true;
+					}
+				} else if (mMinFlingVelocity <= absVelocityX && absVelocityX <= mMaxFlingVelocity && absVelocityY < absVelocityX && mSwiping) {
+					// dismiss only if flinging in the same direction as dragging
+					dismissRight = mVelocityTracker.getXVelocity() > 0;
+
+					if ((dismissRight && (mRowContainer.leftCanDismissState == CanDismissState.TRUE))
+						|| (!dismissRight && (mRowContainer.rightCanDismissState == CanDismissState.TRUE))) {
+						dismiss = (velocityX < 0) == (deltaX < 0);
+					}
+				}
+
+				if (dismiss && mDownPosition != ListView.INVALID_POSITION) {
+					// dismiss
+					final RowContainer downView = mRowContainer; // mDownView gets null'd before animation ends
+					final int downPosition = mDownPosition;
+
+					int translationX = dismissRight ? mViewWidth : -mViewWidth;
+					AnimatorListenerAdapter listener = new AnimatorListenerAdapter() {
+						@Override
+						public void onAnimationEnd(Animator animation) {
+							tearDownRowContainerData();
+							performDismiss(downView, downPosition);
+						}
+					};
+
+					setRowTransition(true, translationX, 1, listener);
+				} else {
+					// cancel
+					setRowTransition(true, 0);
+				}
+
+				break;
+			}
+
+			case MotionEvent.ACTION_MOVE: {
+				if (mVelocityTracker == null || mPaused || (mRowContainer == null) || (mRowContainer.getCurrentSwipingView() == null)
+					|| (mRowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED)) {
+					break;
+				}
+
+				mVelocityTracker.addMovement(motionEvent);
+				float deltaX = motionEvent.getRawX() - mDownX;
+				float deltaY = motionEvent.getRawY() - mDownY;
+				if (Math.abs(deltaX) > mSlop && Math.abs(deltaY) < Math.abs(deltaX) / 2) {
+					mSwiping = true;
+					mSwipingSlop = (deltaX > 0 ? mSlop : -mSlop);
+					mRecyclerView.requestDisallowInterceptTouchEvent(true);
+
+					// Cancel ListView's touch (un-highlighting the item)
+					MotionEvent cancelEvent = MotionEvent.obtain(motionEvent);
+					cancelEvent.setAction(MotionEvent.ACTION_CANCEL | (motionEvent.getActionIndex() << MotionEvent.ACTION_POINTER_INDEX_SHIFT));
+					mRecyclerView.onTouchEvent(cancelEvent);
+					cancelEvent.recycle();
+				}
+
+				if (mSwiping) {
+					// Which direction is the user swiping
+					if (deltaX > 0) {
+						mRowContainer.direction = SwipeDirection.FROM_LEFT;
+					} else {
+						mRowContainer.direction = SwipeDirection.FROM_RIGHT;
+					}
+
+					// Valid click happened before
+					if ((mDownPosition != ListView.INVALID_POSITION) || (mRowContainer.direction != SwipeDirection.NONE)) {
+
+						// Set canDismiss states just in time
+						if ((mRowContainer.leftCanDismissState == CanDismissState.NONE)
+							&& (mRowContainer.direction == SwipeDirection.FROM_LEFT)) {
+							mRowContainer.leftCanDismissState = mCallbacks.canDismiss(mDownPosition, mRowContainer.direction) ? CanDismissState.TRUE
+								: CanDismissState.FALSE;
+						} else if ((mRowContainer.rightCanDismissState == CanDismissState.NONE)
+							&& (mRowContainer.direction == SwipeDirection.FROM_RIGHT)) {
+							mRowContainer.rightCanDismissState = mCallbacks.canDismiss(mDownPosition, mRowContainer.direction) ? CanDismissState.TRUE
+								: CanDismissState.FALSE;
 						}
 					}
 
-					break;
-				}
-			}
-
-			if (mRowContainer != null) {
-				mDownX = motionEvent.getRawX();
-				mDownY = motionEvent.getRawY();
-				mDownPosition = mRecyclerView.getChildPosition(mRowContainer.container);
-				mVelocityTracker = VelocityTracker.obtain();
-				mVelocityTracker.addMovement(motionEvent);
-			}
-
-			// return true;
-			return false;
-		}
-
-		case MotionEvent.ACTION_CANCEL: {
-			if (mVelocityTracker == null) {
-				break;
-			}
-
-			if ((mRowContainer != null) && (mRowContainer.getCurrentSwipingView() != null) && mSwiping) {
-				// cancel
-				mRowContainer.dismissState = DismissState.NONE;
-
-				setRowTransition(true, 0);
-			}
-
-			tearDownRowContainerData();
-			break;
-		}
-
-		case MotionEvent.ACTION_UP: {
-			if ((mVelocityTracker == null) || (mRowContainer == null) || (mRowContainer.getCurrentSwipingView() == null)) {
-				break;
-			}
-
-			float deltaX = motionEvent.getRawX() - mDownX;
-			mVelocityTracker.addMovement(motionEvent);
-			mVelocityTracker.computeCurrentVelocity(1000);
-			float velocityX = mVelocityTracker.getXVelocity();
-			float absVelocityX = Math.abs(velocityX);
-			float absVelocityY = Math.abs(mVelocityTracker.getYVelocity());
-			boolean dismiss = false;
-			boolean dismissRight = false;
-
-			if (Math.abs(deltaX) > mViewWidth / 2 && mSwiping) {
-				dismissRight = deltaX > 0;
-
-				if ((dismissRight && (mRowContainer.leftCanDismissState == CanDismissState.TRUE))
-						|| (!dismissRight && (mRowContainer.rightCanDismissState == CanDismissState.TRUE))) {
-					dismiss = true;
-				}
-			} else if (mMinFlingVelocity <= absVelocityX && absVelocityX <= mMaxFlingVelocity && absVelocityY < absVelocityX && mSwiping) {
-				// dismiss only if flinging in the same direction as dragging
-				dismissRight = mVelocityTracker.getXVelocity() > 0;
-
-				if ((dismissRight && (mRowContainer.leftCanDismissState == CanDismissState.TRUE))
-						|| (!dismissRight && (mRowContainer.rightCanDismissState == CanDismissState.TRUE))) {
-					dismiss = (velocityX < 0) == (deltaX < 0);
-				}
-			}
-
-			if (dismiss && mDownPosition != ListView.INVALID_POSITION) {
-				// dismiss
-				final RowContainer downView = mRowContainer; // mDownView gets null'd before animation ends
-				final int downPosition = mDownPosition;
-
-				int translationX = dismissRight ? mViewWidth : -mViewWidth;
-				AnimatorListenerAdapter listener = new AnimatorListenerAdapter() {
-					@Override
-					public void onAnimationEnd(Animator animation) {
-						tearDownRowContainerData();
-						performDismiss(downView, downPosition);
-					}
-				};
-
-				setRowTransition(true, translationX, 1, listener);
-			} else {
-				// cancel
-				setRowTransition(true, 0);
-			}
-
-			break;
-		}
-
-		case MotionEvent.ACTION_MOVE: {
-			if (mVelocityTracker == null || mPaused || (mRowContainer == null) || (mRowContainer.getCurrentSwipingView() == null)
-					|| (mRowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED)) {
-				break;
-			}
-
-			mVelocityTracker.addMovement(motionEvent);
-			float deltaX = motionEvent.getRawX() - mDownX;
-			float deltaY = motionEvent.getRawY() - mDownY;
-			if (Math.abs(deltaX) > mSlop && Math.abs(deltaY) < Math.abs(deltaX) / 2) {
-				mSwiping = true;
-				mSwipingSlop = (deltaX > 0 ? mSlop : -mSlop);
-				mRecyclerView.requestDisallowInterceptTouchEvent(true);
-
-				// Cancel ListView's touch (un-highlighting the item)
-				MotionEvent cancelEvent = MotionEvent.obtain(motionEvent);
-				cancelEvent.setAction(MotionEvent.ACTION_CANCEL | (motionEvent.getActionIndex() << MotionEvent.ACTION_POINTER_INDEX_SHIFT));
-				mRecyclerView.onTouchEvent(cancelEvent);
-				cancelEvent.recycle();
-			}
-
-			if (mSwiping) {
-				// Which direction is the user swiping
-				if (deltaX > 0) {
-					mRowContainer.direction = SwipeDirection.FROM_LEFT;
-				} else {
-					mRowContainer.direction = SwipeDirection.FROM_RIGHT;
-				}
-
-				// Valid click happened before
-				if ((mDownPosition != ListView.INVALID_POSITION) || (mRowContainer.direction != SwipeDirection.NONE)) {
-
-					// Set canDismiss states just in time
-					if ((mRowContainer.leftCanDismissState == CanDismissState.NONE)
-							&& (mRowContainer.direction == SwipeDirection.FROM_LEFT)) {
-						mRowContainer.leftCanDismissState = mCallbacks.canDismiss(mDownPosition, mRowContainer.direction) ? CanDismissState.TRUE
-								: CanDismissState.FALSE;
-					} else if ((mRowContainer.rightCanDismissState == CanDismissState.NONE)
-							&& (mRowContainer.direction == SwipeDirection.FROM_RIGHT)) {
-						mRowContainer.rightCanDismissState = mCallbacks.canDismiss(mDownPosition, mRowContainer.direction) ? CanDismissState.TRUE
-								: CanDismissState.FALSE;
-					}
-				}
-
-				if (((mRowContainer.leftCanDismissState == CanDismissState.TRUE) && (deltaX > 0))
+					if (((mRowContainer.leftCanDismissState == CanDismissState.TRUE) && (deltaX > 0))
 						|| ((mRowContainer.rightCanDismissState == CanDismissState.TRUE) && (deltaX < 0))) {
-					if (deltaX > 0) {
-						mRowContainer.leftUpToDismissContainer.setVisibility(View.VISIBLE);
-						mRowContainer.rightUpToDismissContainer.setVisibility(View.GONE);
-					} else {
-						mRowContainer.rightUpToDismissContainer.setVisibility(View.VISIBLE);
-						mRowContainer.leftUpToDismissContainer.setVisibility(View.GONE);
+						if (deltaX > 0) {
+							mRowContainer.leftUpToDismissContainer.setVisibility(View.VISIBLE);
+							mRowContainer.rightUpToDismissContainer.setVisibility(View.GONE);
+						} else {
+							mRowContainer.rightUpToDismissContainer.setVisibility(View.VISIBLE);
+							mRowContainer.leftUpToDismissContainer.setVisibility(View.GONE);
+						}
+
+						float translationX = deltaX - mSwipingSlop;
+						float alpha = Math.max(0f, Math.min(1f, 1f - 2f * Math.abs(deltaX) / mViewWidth));
+						setRowTransition(false, translationX, alpha);
 					}
 
-					float translationX = deltaX - mSwipingSlop;
-					float alpha = Math.max(0f, Math.min(1f, 1f - 2f * Math.abs(deltaX) / mViewWidth));
-					setRowTransition(false, translationX, alpha);
+					return true;
 				}
 
-				return true;
+				break;
 			}
-
-			break;
-		}
 		}
 		return false;
 	}
@@ -614,7 +608,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 	/**
 	 * If a view was dismissed and the undo container is showing it will proceed with the final dismiss of the item.
-	 * 
+	 *
 	 * @return whether there were any pending rows to be dismissed.
 	 */
 	public boolean processPendingDismisses() {
@@ -626,7 +620,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 	/**
 	 * Whether a row has been dismissed and is waiting for confirmation
-	 * 
+	 *
 	 * @return whether there are any pending rows to be dismissed.
 	 */
 	public boolean existPendingDismisses() {
@@ -635,7 +629,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 	/**
 	 * If a view was dismissed and the undo container is showing it will undo and make the data container reappear.
-	 * 
+	 *
 	 * @return whether there were any pending rows to be dismissed.
 	 */
 	public boolean undoPendingDismiss() {
