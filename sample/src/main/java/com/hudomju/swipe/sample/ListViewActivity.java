@@ -18,8 +18,6 @@ import com.hudomju.swipe.adapter.ListViewAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static android.widget.Toast.LENGTH_SHORT;
-
 public class ListViewActivity extends Activity {
 
 	@Override
@@ -33,11 +31,11 @@ public class ListViewActivity extends Activity {
 		final MyBaseAdapter adapter = new MyBaseAdapter();
 		listView.setAdapter(adapter);
 		final SwipeToDismissTouchListener<ListViewAdapter> touchListener = new SwipeToDismissTouchListener<>(
-				new ListViewAdapter(listView),
-				new SwipeToDismissTouchListener.DismissCallbacks<ListViewAdapter>() {
-					@Override
-					public boolean canDismiss(int position, SwipeToDismissTouchListener.SwipeDirection direction) {
-						return true;
+			new ListViewAdapter(listView),
+			new SwipeToDismissTouchListener.DismissCallbacks<ListViewAdapter>() {
+				@Override
+				public boolean canDismiss(int position, SwipeToDismissTouchListener.SwipeDirection direction) {
+					return true;
 						/*
 						if (direction == SwipeToDismissTouchListener.SwipeDirection.FROM_LEFT) {
 							return true;
@@ -45,19 +43,19 @@ public class ListViewActivity extends Activity {
 							return false;
 						}
 						*/
-					}
+				}
 
-					@Override
-					public void onPendingDismiss(ListViewAdapter viewAdapter, int position,
-							SwipeToDismissTouchListener.SwipeDirection direction) {
+				@Override
+				public void onPendingDismiss(ListViewAdapter viewAdapter, int position,
+											 SwipeToDismissTouchListener.SwipeDirection direction) {
 
-					}
+				}
 
-					@Override
-					public void onDismiss(ListViewAdapter view, int position, SwipeToDismissTouchListener.SwipeDirection direction) {
-						adapter.remove(position);
-					}
-				});
+				@Override
+				public void onDismiss(ListViewAdapter view, int position, SwipeToDismissTouchListener.SwipeDirection direction) {
+					adapter.remove(position);
+				}
+			});
 		touchListener.setAlphaAnimation(false);
 		touchListener.setSlop(0);
 		listView.setOnTouchListener(touchListener);
@@ -70,7 +68,7 @@ public class ListViewActivity extends Activity {
 				if (touchListener.existPendingDismisses()) {
 					touchListener.undoPendingDismiss();
 				} else {
-					Toast.makeText(ListViewActivity.this, "Position " + position, LENGTH_SHORT).show();
+					Toast.makeText(ListViewActivity.this, "Position " + position, Toast.LENGTH_SHORT).show();
 				}
 			}
 		});
@@ -120,9 +118,9 @@ public class ListViewActivity extends Activity {
 		public View getView(int position, View convertView, ViewGroup parent) {
 
 			ViewHolder viewHolder = convertView == null ? new ViewHolder(convertView = LayoutInflater.from(parent.getContext()).inflate(
-					R.layout.list_item,
-					parent,
-					false)) : (ViewHolder) convertView.getTag();
+				R.layout.list_item,
+				parent,
+				false)) : (ViewHolder) convertView.getTag();
 
 			viewHolder.dataTextView.setText(mDataSet.get(position));
 			return convertView;
