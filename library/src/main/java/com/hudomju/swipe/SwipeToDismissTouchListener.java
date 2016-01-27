@@ -314,14 +314,14 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 					if (rect.contains(x, y)) {
 						assert (child instanceof ViewGroup && ((ViewGroup) child).getChildCount() == 2) : "Each child needs to extend from ViewGroup and have two children";
 
-						boolean dataContainerHasBeenDismissed = (mPendingDismiss != null)
+						boolean dataContainerIsPendingDismissal = (mPendingDismiss != null)
 							&& mPendingDismiss.position == mRecyclerView.getChildPosition(child)
 							&& (mPendingDismiss.rowContainer.dismissState == DismissState.PENDING_DISMISS);
 
 						if (mRowContainer == null) {
 							mRowContainer = new RowContainer((ViewGroup) child);
 
-							if (dataContainerHasBeenDismissed) {
+							if (dataContainerIsPendingDismissal) {
 								mRowContainer.dismissState = DismissState.PENDING_DISMISS;
 							} else {
 								mRowContainer.dismissState = DismissState.NONE;
@@ -664,40 +664,41 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		animator.addListener(new AnimatorListenerAdapter() {
 			@Override
 			public void onAnimationEnd(Animator animation) {
-				if (mCallbacks.canDismiss(pendingDismissData.position, pendingDismissData.rowContainer.direction))
+				if (mCallbacks.canDismiss(pendingDismissData.position, pendingDismissData.rowContainer.direction)) {
 					mCallbacks.onDismiss(mRecyclerView, pendingDismissData.position, pendingDismissData.rowContainer.direction);
-				pendingDismissData.rowContainer.dataContainer.post(new Runnable() {
-					@Override
-					public void run() {
-						pendingDismissData.rowContainer.dataContainer.setTranslationX(0);
-
-						if (mAlphaAnimationEnabled) {
-							pendingDismissData.rowContainer.dataContainer.setAlpha(1);
-						}
-
-						if (pendingDismissData.rowContainer.direction == SwipeDirection.FROM_RIGHT) {
-							pendingDismissData.rowContainer.rightUndoContainer.setVisibility(View.GONE);
-							pendingDismissData.rowContainer.rightUndoContainer.setTranslationX(0);
+					pendingDismissData.rowContainer.dataContainer.post(new Runnable() {
+						@Override
+						public void run() {
+							pendingDismissData.rowContainer.dataContainer.setTranslationX(0);
 
 							if (mAlphaAnimationEnabled) {
-								pendingDismissData.rowContainer.rightUndoContainer.setAlpha(1);
+								pendingDismissData.rowContainer.dataContainer.setAlpha(1);
 							}
-						} else if (pendingDismissData.rowContainer.direction == SwipeDirection.FROM_LEFT) {
-							pendingDismissData.rowContainer.leftUndoContainer.setVisibility(View.GONE);
-							pendingDismissData.rowContainer.leftUndoContainer.setTranslationX(0);
 
-							if (mAlphaAnimationEnabled) {
-								pendingDismissData.rowContainer.leftUndoContainer.setAlpha(1);
+							if (pendingDismissData.rowContainer.direction == SwipeDirection.FROM_RIGHT) {
+								pendingDismissData.rowContainer.rightUndoContainer.setVisibility(View.GONE);
+								pendingDismissData.rowContainer.rightUndoContainer.setTranslationX(0);
+
+								if (mAlphaAnimationEnabled) {
+									pendingDismissData.rowContainer.rightUndoContainer.setAlpha(1);
+								}
+							} else if (pendingDismissData.rowContainer.direction == SwipeDirection.FROM_LEFT) {
+								pendingDismissData.rowContainer.leftUndoContainer.setVisibility(View.GONE);
+								pendingDismissData.rowContainer.leftUndoContainer.setTranslationX(0);
+
+								if (mAlphaAnimationEnabled) {
+									pendingDismissData.rowContainer.leftUndoContainer.setAlpha(1);
+								}
 							}
+
+							lp.height = originalHeight;
+							pendingDismissData.rowContainer.container.setLayoutParams(lp);
 						}
+					});
 
-						lp.height = originalHeight;
-						pendingDismissData.rowContainer.container.setLayoutParams(lp);
-
-						tearDownRowContainerData();
-						setEnabled(true); // Fix problem with disabling in ScrollListener
-					}
-				});
+					tearDownRowContainerData();
+					setEnabled(true); // Fix problem with disabling in ScrollListener
+				}
 			}
 		});
 

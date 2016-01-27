@@ -36,13 +36,13 @@ public class ListViewActivity extends Activity {
 				@Override
 				public boolean canDismiss(int position, SwipeToDismissTouchListener.SwipeDirection direction) {
 					return true;
-						/*
-						if (direction == SwipeToDismissTouchListener.SwipeDirection.FROM_LEFT) {
-							return true;
-						} else {
-							return false;
-						}
-						*/
+/*
+					if (direction == SwipeToDismissTouchListener.SwipeDirection.FROM_LEFT) {
+						return true;
+					} else {
+						return false;
+					}
+*/
 				}
 
 				@Override
