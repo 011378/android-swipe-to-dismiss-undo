@@ -124,7 +124,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	}
 
 	public enum DismissState {
-		NONE, UP_TO_DISMISS, HAS_BEEN_DISMISSED
+		NONE, UP_TO_DISMISS, PENDING_DISMISS
 	}
 
 	public enum CanDismissState {
@@ -168,7 +168,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		 */
 		public View getCurrentSwipingView() {
 			// Use Undo-views if action should be reverted
-			if (dismissState == DismissState.HAS_BEEN_DISMISSED) {
+			if (dismissState == DismissState.PENDING_DISMISS) {
 				if (direction == SwipeDirection.FROM_RIGHT) {
 					return rightUndoContainer;
 				} else if (direction == SwipeDirection.FROM_LEFT) {
@@ -323,13 +323,13 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 					boolean dataContainerHasBeenDismissed = (mPendingDismiss != null)
 							&& mPendingDismiss.position == mRecyclerView.getChildPosition(child)
-							&& (mPendingDismiss.rowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED);
+							&& (mPendingDismiss.rowContainer.dismissState == DismissState.PENDING_DISMISS);
 
 					if (mRowContainer == null) {
 						mRowContainer = new RowContainer((ViewGroup) child);
 
 						if (dataContainerHasBeenDismissed) {
-							mRowContainer.dismissState = DismissState.HAS_BEEN_DISMISSED;
+							mRowContainer.dismissState = DismissState.PENDING_DISMISS;
 						} else {
 							mRowContainer.dismissState = DismissState.NONE;
 						}
@@ -347,7 +347,6 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 				mVelocityTracker.addMovement(motionEvent);
 			}
 
-			// return true;
 			return false;
 		}
 
@@ -368,7 +367,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		}
 
 		case MotionEvent.ACTION_UP: {
-			if ((mVelocityTracker == null) || (mRowContainer == null) || (mRowContainer.getCurrentSwipingView() == null)) {
+			if ((mVelocityTracker == null) || (mRowContainer == null) || (mRowContainer.getCurrentSwipingView() == null)
+					|| (mRowContainer.dismissState == DismissState.PENDING_DISMISS)) {
 				break;
 			}
 
@@ -423,7 +423,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 		case MotionEvent.ACTION_MOVE: {
 			if (mVelocityTracker == null || mPaused || (mRowContainer == null) || (mRowContainer.getCurrentSwipingView() == null)
-					|| (mRowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED)) {
+					|| (mRowContainer.dismissState == DismissState.PENDING_DISMISS)) {
 				break;
 			}
 
@@ -592,7 +592,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	}
 
 	private void addPendingDismiss(RowContainer dismissView, int dismissPosition) {
-		dismissView.dismissState = DismissState.HAS_BEEN_DISMISSED;
+		dismissView.dismissState = DismissState.PENDING_DISMISS;
 
 		if (dismissView.direction == SwipeDirection.FROM_RIGHT) {
 			dismissView.rightUndoContainer.setVisibility(View.VISIBLE);
@@ -630,7 +630,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 	 * @return whether there are any pending rows to be dismissed.
 	 */
 	public boolean existPendingDismisses() {
-		return mPendingDismiss != null && (mPendingDismiss.rowContainer.dismissState == DismissState.HAS_BEEN_DISMISSED);
+		return mPendingDismiss != null && (mPendingDismiss.rowContainer.dismissState == DismissState.PENDING_DISMISS);
 	}
 
 	/**
