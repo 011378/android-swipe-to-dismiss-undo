@@ -318,6 +318,10 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 							&& mPendingDismiss.position == mRecyclerView.getChildPosition(child)
 							&& (mPendingDismiss.rowContainer.dismissState == DismissState.PENDING_DISMISS);
 
+						if (dataContainerIsPendingDismissal) {
+							return false;
+						}
+
 						if (mRowContainer == null) {
 							mRowContainer = new RowContainer((ViewGroup) child);
 
@@ -361,7 +365,6 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 			case MotionEvent.ACTION_UP: {
 				if ((mVelocityTracker == null) || (mRowContainer == null) || (mRowContainer.getCurrentSwipingView() == null)) {
-					//		|| (mRowContainer.dismissState == DismissState.PENDING_DISMISS)) {
 					break;
 				}
 
@@ -408,7 +411,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 					setRowTransition(true, translationX, 1, listener);
 				} else {
 					if (mRowContainer.dismissState == DismissState.PENDING_DISMISS) {
-						return true;//undoPendingDismiss();
+						return true;
 					}
 
 					// cancel
@@ -695,9 +698,6 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 							pendingDismissData.rowContainer.container.setLayoutParams(lp);
 						}
 					});
-
-					tearDownRowContainerData();
-					setEnabled(true); // Fix problem with disabling in ScrollListener
 				}
 			}
 		});
