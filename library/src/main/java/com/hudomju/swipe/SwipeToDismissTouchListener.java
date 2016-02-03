@@ -342,6 +342,9 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 					mDownPosition = mRecyclerView.getChildPosition(mRowContainer.container);
 					mVelocityTracker = VelocityTracker.obtain();
 					mVelocityTracker.addMovement(motionEvent);
+				} else if (existPendingDismisses()) {
+					// Dismiss pending items if the user clicks outside of the list
+					processPendingDismisses();
 				}
 
 				return false;
