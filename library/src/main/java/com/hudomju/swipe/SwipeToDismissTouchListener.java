@@ -149,7 +149,6 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 		CanDismissState leftCanDismissState = CanDismissState.NONE;
 
 		DismissState dismissState = DismissState.NONE;
-		;
 
 		SwipeDirection direction = SwipeDirection.NONE;
 
@@ -336,7 +335,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 					}
 				}
 
-				if (mRowContainer != null) {
+				// Check for parent in case list items have already been recycled and parent has been set to null when this is called
+				if ((mRowContainer != null) && (mRowContainer.container != null) && (mRowContainer.container.getParent() != null)) {
 					mDownX = motionEvent.getRawX();
 					mDownY = motionEvent.getRawY();
 					mDownPosition = mRecyclerView.getChildPosition(mRowContainer.container);
