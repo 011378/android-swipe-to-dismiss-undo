@@ -36,13 +36,13 @@ public class ListViewActivity extends Activity {
 				@Override
 				public boolean canDismiss(int position, SwipeToDismissTouchListener.SwipeDirection direction) {
 					return true;
-/*
-					if (direction == SwipeToDismissTouchListener.SwipeDirection.FROM_LEFT) {
+
+					/*if (direction == SwipeToDismissTouchListener.SwipeDirection.FROM_LEFT) {
 						return true;
 					} else {
 						return false;
-					}
-*/
+					}*/
+
 				}
 
 				@Override
@@ -57,7 +57,7 @@ public class ListViewActivity extends Activity {
 				}
 			});
 		touchListener.setAlphaAnimation(false);
-		touchListener.setSlop(0);
+		//touchListener.setSlop(0);
 		listView.setOnTouchListener(touchListener);
 		// Setting this scroll listener is required to ensure that during ListView scrolling,
 		// we don't look for swipes.

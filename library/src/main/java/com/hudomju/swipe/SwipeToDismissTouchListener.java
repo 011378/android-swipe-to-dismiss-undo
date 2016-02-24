@@ -460,12 +460,12 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 						// Set canDismiss states just in time
 						if (mRowContainer.leftCanDismissState == CanDismissState.NONE) {
-							mRowContainer.leftCanDismissState = mCallbacks.canDismiss(mDownPosition, mRowContainer.direction) ? CanDismissState.TRUE
+							mRowContainer.leftCanDismissState = mCallbacks.canDismiss(mDownPosition, SwipeDirection.FROM_LEFT) ? CanDismissState.TRUE
 								: CanDismissState.FALSE;
 						}
 
 						if (mRowContainer.rightCanDismissState == CanDismissState.NONE) {
-							mRowContainer.rightCanDismissState = mCallbacks.canDismiss(mDownPosition, mRowContainer.direction) ? CanDismissState.TRUE
+							mRowContainer.rightCanDismissState = mCallbacks.canDismiss(mDownPosition, SwipeDirection.FROM_RIGHT) ? CanDismissState.TRUE
 								: CanDismissState.FALSE;
 						}
 					}
@@ -508,7 +508,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
 						//Log.e("LEFT1", "X: " + translationX + " | mSwipingSlop: " + mSwipingSlop + " | deltaX: " + deltaX);
 					} else if ((mRowContainer.leftCanDismissState == CanDismissState.TRUE)
-						&& (mRowContainer.leftCanDismissState == CanDismissState.TRUE)
+						&& (mRowContainer.rightCanDismissState == CanDismissState.TRUE)
 						&& (mRowContainer.leftUpToDismissContainer.getVisibility() == View.VISIBLE)
 						&& (translationX <= 0)) {
 						mRowContainer.rightUpToDismissContainer.setVisibility(View.VISIBLE);
@@ -531,6 +531,9 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 						mRowContainer.leftUpToDismissContainer.setVisibility(View.GONE);
 
 						//Log.e("RIGHT2", "X: " + translationX + " | mSwipingSlop: " + mSwipingSlop + " | deltaX: " + deltaX);
+					} else {
+						// Swiping not possible
+						return true;
 					}
 
 					float alpha = Math.max(0f, Math.min(1f, 1f - 2f * Math.abs(deltaX) / mViewWidth));
